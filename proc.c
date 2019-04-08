@@ -690,9 +690,9 @@ thread_exit(void* retval)
   iput(curproc->cwd);
   end_op();
   curproc->cwd = 0;
-  retval = (void*)curproc->tf->eax;
+  curproc->tf->eax = (uint)retval;
   acquire(&ptable.lock);
-
+  *(curproc->tcnt)--;
   // Parent might be sleeping in wait().
   wakeup1(curproc->parent);
 
@@ -725,7 +725,7 @@ thread_join(int tid, void** retval)
     // Scan through table looking for exited children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != curproc)
+      if(p->tid != tid)
         continue;
       havekids = 1;
       if(p->state == ZOMBIE){
@@ -733,14 +733,16 @@ thread_join(int tid, void** retval)
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
+		free(p->stack);
         freevm(p->pgdir);
         p->pid = 0;
         p->parent = 0;
         p->name[0] = 0;
         p->killed = 0;
         p->state = UNUSED;
+		*retval = (void*)p->tf->eax;
         release(&ptable.lock);
-        return pid;
+        return 0;
       }
     }
 
