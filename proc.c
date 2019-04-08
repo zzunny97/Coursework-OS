@@ -619,7 +619,7 @@ ps(int pid)
 
 int thread_create(void* (*function)(void*), void* arg, void* stack)
 {
-  int i, pid;
+  int i;// pid;
   struct proc *np;
   struct proc *curproc = myproc();
   // Allocate process.
@@ -639,8 +639,8 @@ int thread_create(void* (*function)(void*), void* arg, void* stack)
   *np->tf = *curproc->tf;
   np->nice = 20;
   np->tcnt = curproc->tcnt;
-  *(np->tcnt)++;
-  np->tid = np->tcnt;
+  *(np->tcnt) += 1;
+  np->tid = *(np->tcnt);
   np->stack = stack;
   np->tf->eip = (uint)function;
   np->tf->edi = (uint)arg;
@@ -658,7 +658,7 @@ int thread_create(void* (*function)(void*), void* arg, void* stack)
 
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
 
-  pid = np->pid;
+  //pid = np->pid;
 
   acquire(&ptable.lock);
 
@@ -692,7 +692,7 @@ thread_exit(void* retval)
   curproc->cwd = 0;
   curproc->tf->eax = (uint)retval;
   acquire(&ptable.lock);
-  *(curproc->tcnt)--;
+  *(curproc->tcnt) -= 1;
   // Parent might be sleeping in wait().
   wakeup1(curproc->parent);
 
@@ -717,9 +717,9 @@ int
 thread_join(int tid, void** retval)
 {
   struct proc *p;
-  int havekids, pid;
+  int havekids;
   struct proc *curproc = myproc();
-
+  //int pid;
   acquire(&ptable.lock);
   for(;;){
     // Scan through table looking for exited children.
@@ -730,10 +730,10 @@ thread_join(int tid, void** retval)
       havekids = 1;
       if(p->state == ZOMBIE){
         // Found one.
-        pid = p->pid;
+        //pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
-		free(p->stack);
+		    kfree(p->stack);
         freevm(p->pgdir);
         p->pid = 0;
         p->parent = 0;
