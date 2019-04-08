@@ -27,6 +27,10 @@ int halt(void) __attribute__((noreturn));
 int getnice(int);
 int setnice(int, int);
 void ps(int);
+int thread_create(void* (void*), void*, void*);
+void thread_exit(void*);
+int thread_exit(int, void**);
+int gettid();
 
 // ulib.c
 int stat(const char*, struct stat*);
@@ -41,3 +45,4 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
+
