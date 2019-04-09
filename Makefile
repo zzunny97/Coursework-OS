@@ -185,7 +185,12 @@ UPROGS=\
   _getnice\
   _setnice\
   _ps\
-  _test
+  _thread_create\
+  _thread_exit\
+  _thread_join\
+  _gettid\
+  _test\
+  _test2
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)

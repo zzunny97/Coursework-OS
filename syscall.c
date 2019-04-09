@@ -61,10 +61,14 @@ argptr(int n, char **pp, int size)
   int i;
   struct proc *curproc = myproc();
  
-  if(argint(n, &i) < 0)
+  if(argint(n, &i) < 0){
+    cprintf("err1\n");   
     return -1;
-  if(size < 0 || (uint)i >= curproc->sz || (uint)i+size > curproc->sz)
+  }
+  if(size < 0 || (uint)i >= curproc->sz || (uint)i+size > curproc->sz){
+    cprintf("err2\n");
     return -1;
+  }
   *pp = (char*)i;
   return 0;
 }
@@ -107,6 +111,10 @@ extern int sys_halt(void);
 extern int sys_getnice(void);
 extern int sys_setnice(void);
 extern int sys_ps(void);
+extern int sys_thread_create(void);
+extern int sys_thread_exit(void);
+extern int sys_thread_join(void);
+extern int sys_gettid(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -134,6 +142,10 @@ static int (*syscalls[])(void) = {
 [SYS_getnice] sys_getnice,
 [SYS_setnice] sys_setnice,
 [SYS_ps]      sys_ps,
+[SYS_thread_create]      sys_thread_create,
+[SYS_thread_exit]      sys_thread_exit,
+[SYS_thread_join]      sys_thread_join,
+[SYS_gettid]      sys_gettid,
 };
 
 

@@ -52,7 +52,9 @@ struct proc {
   char name[16];               // Process name (debugging)
   void* stack;
   int tid;
-  int* tcnt;
+  //int* tcnt;
+  int tcnt;
+  //int* max_tid;
 };
 
 // Process memory is laid out contiguously, low addresses first:

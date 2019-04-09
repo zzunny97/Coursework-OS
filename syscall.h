@@ -24,7 +24,7 @@
 #define SYS_getnice 23
 #define SYS_setnice 24
 #define SYS_ps      25
-#define SYS_thread_create 26
+#define SYS_thread_create  26
 #define SYS_thread_exit      27
 #define SYS_thread_join      28
 #define SYS_gettid      29
