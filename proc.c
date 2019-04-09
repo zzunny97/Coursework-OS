@@ -90,7 +90,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-  
+
 
   release(&ptable.lock);
 
@@ -237,7 +237,7 @@ exit(void)
 
   if(curproc == initproc)
     panic("init exiting");
-  
+
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
     if(curproc->ofile[fd]){
@@ -265,40 +265,44 @@ exit(void)
     }
   }
   /*
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->pid == curproc->pid){
-      for(fd = 0; fd<NOFILE; fd++){
-        if(p->ofile[fd]){
-          fileclose(p->ofile[fd]);
-          p->ofile[fd] = 0; 
-        }
-      }
-      begin_op();
-      iput(p->cwd);
-      end_op();
-      p->pwd = 0;
-      p->state = ZOMBIE;
-    }
-  }*/
+     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+     if(p->pid == curproc->pid){
+     for(fd = 0; fd<NOFILE; fd++){
+     if(p->ofile[fd]){
+     fileclose(p->ofile[fd]);
+     p->ofile[fd] = 0; 
+     }
+     }
+     begin_op();
+     iput(p->cwd);
+     end_op();
+     p->pwd = 0;
+     p->state = ZOMBIE;
+     }
+     }*/
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
   sched();
   panic("zombie exit");
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->pid == curproc->pid){
-      for(fd = 0; fd<NOFILE; fd++){
-        if(p->ofile[fd]){
-          fileclose(p->ofile[fd]);
-          p->ofile[fd] = 0; 
+  if(curproc->tid == 1){
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->pid == curproc->pid){
+        for(fd = 0; fd<NOFILE; fd++){
+          if(p->ofile[fd]){
+            fileclose(p->ofile[fd]);
+            p->ofile[fd] = 0; 
+          }
         }
+        begin_op();
+        iput(p->cwd);
+        end_op();
+        p->cwd = 0;
+        p->state = ZOMBIE;
       }
-      begin_op();
-      iput(p->cwd);
-      end_op();
-      p->cwd = 0;
-      p->state = ZOMBIE;
     }
+
   }
+
 }
 
 // Wait for a child process to exit and return its pid.
@@ -734,7 +738,7 @@ thread_exit(void* retval)
   //cprintf("retval: %d\n", (void*)retval);
   curproc->tf->eax = (uint)retval;
   acquire(&ptable.lock);
-  
+
   // Parent might be sleeping in wait().
   wakeup1(curproc->parent);
   // Pass abandoned children to init.
@@ -771,10 +775,10 @@ thread_join(int tid, void** retval)
         continue;
       //cprintf("have kid\n");
       /*
-      if(p->tf->eax == (void*)0x87654321)
-        cprintf("eax correct\n");
-      else
-        cprintf("eax wrong\n");*/
+         if(p->tf->eax == (void*)0x87654321)
+         cprintf("eax correct\n");
+         else
+         cprintf("eax wrong\n");*/
 
       havekids = 1;
       if(p->state == ZOMBIE){
