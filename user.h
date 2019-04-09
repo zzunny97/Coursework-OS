@@ -27,7 +27,7 @@ int halt(void) __attribute__((noreturn));
 int getnice(int);
 int setnice(int, int);
 void ps(int);
-int thread_create(void** (void*), void*, void*);
+int thread_create(void* (void*), void*, void*);
 void thread_exit(void*);
 int thread_join(int, void**);
 int gettid();

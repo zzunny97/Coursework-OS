@@ -189,8 +189,6 @@ UPROGS=\
   _thread_exit\
   _thread_join\
   _gettid\
-  _test\
-  _test2
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -252,7 +250,7 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 	$(QEMU) -nographic $(QEMUOPTS) -S $(QEMUGDB)
 
 # SKKU operating system
-PROJECTNUM=1
+PROJECTNUM=2
 # enter your ID
 STUDENTID=2016312029
 
