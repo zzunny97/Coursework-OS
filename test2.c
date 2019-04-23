@@ -1,72 +1,58 @@
 #include "types.h"
 #include "stat.h"
 #include "user.h"
+
+void *stack[8];
+void *retval[8];
+int tid[8];
+
 void *
 thread(void *arg)
 {
-  printf(1, "gettid(): ");
-  if(gettid() == 1){
-    printf(1, "this is thread 1!\n");
-  }
-  else if(gettid()==2){
-    printf(1, "this is thread2!\n");
-  }
-  else{
-    printf(1, "what the hell!\n");
-  }
-	thread_exit((void *)0x87654321);
+	thread_exit(0);
 }
 
 int
 main(int argc, char **argv)
 {
-	void *stack;
-	void *retval;
-	int tid;
+	int i;
 
-	printf(1, "TEST: ");
+	printf(1, "TEST2: ");
 
-	stack = malloc(4096);
-  void* stack2 = malloc(4096);
-	
-	tid = thread_create(thread, (void *)0x12345678, stack);
-  int tid2 = thread_create(thread, (void*)0x234567890, stack2);
-	if(tid == -1) {
-		printf(1, "1\n");
-    printf(1, "WRONG\n");
-		exit();
+	for(i=0;i<8;i++)
+		stack[i] = malloc(4096);
+
+	for(i=0;i<7; i++) {
+		tid[i] = thread_create(thread, 0, stack[i]);
+
+		if(tid[i] == -1) {
+			printf(1, "WRONG\n");
+			exit();
+		}
 	}
-  if(tid2 == -1){
-    printf(1, "1-1\n");
-    printf(1, "wrong\n");
-  }
-  printf(1, "before thread_join\n");
-	if(thread_join(tid, &retval) == -1) {
-    printf(1, "2\n");
+
+	tid[7] = thread_create(thread, 0, stack[i]);
+	if(tid[i] != -1) {
 		printf(1, "WRONG\n");
 		exit();
 	}
-  void* retval2;
-  if(thread_join(tid2, &retval2) == -2){
-    printf(1, "2-1\n");
-    printf(1, "wrong\n");
-  }
 
-	if(retval != (void *)0x87654321) {
-    printf(1, "3\n");
+	for(i=0;i<7;i++){
+		if(thread_join(tid[i], &retval[i]) == -1) {
+			printf(1, "WRONG\n");
+			exit();
+		}
+	}
+
+	if(thread_join(tid[7], &retval[7]) != -1){
 		printf(1, "WRONG\n");
 		exit();
 	}
-  if(retval2 != (void*)0x87654321){
-    printf(1, "3-1\n");
-    printf(1, "wrong\n");
-    exit();
-  }
 
-	free(stack);
-  free(stack2);
+	for(i=0;i<7;i++)
+		free(stack[i]);
+
 	printf(1, "OK\n");
 
 	exit();
 }
-

@@ -7,19 +7,11 @@
 void *stack[NTHREAD];
 void *retval[NTHREAD];
 int tid[NTHREAD];
-int mem[NTHREAD];
 
 void *
 thread(void *arg)
 {
-	int index = (int)arg;
-
-	if(mem[index] != (int)arg) {
-		printf(1, "WRONG\n");
-		exit();
-	}
-
-	thread_exit(0);
+	thread_exit((void *)gettid());
 }
 
 int
@@ -27,14 +19,13 @@ main(int argc, char **argv)
 {
 	int i;
 
-	printf(1, "TEST3: ");
+	printf(1, "TEST5: ");
 
 	for(i=0;i<NTHREAD;i++)
 		stack[i] = malloc(4096);
 
-	for(i=0;i<NTHREAD;i++) {
-		mem[i] = i;
-		tid[i] = thread_create(thread, (void *)i, stack[i]);
+	for(i=0;i<NTHREAD; i++) {
+		tid[i] = thread_create(thread, 0, stack[i]);
 
 		if(tid[i] == -1) {
 			printf(1, "WRONG\n");
@@ -42,8 +33,15 @@ main(int argc, char **argv)
 		}
 	}
 
-	for(i=0;i<NTHREAD;i++) {
+	for(i=0;i<NTHREAD;i++){
 		if(thread_join(tid[i], &retval[i]) == -1) {
+			printf(1, "WRONG\n");
+			exit();
+		}
+	}
+
+	for(i=0;i<NTHREAD;i++) {
+		if(tid[i] != (int)retval[i]){
 			printf(1, "WRONG\n");
 			exit();
 		}
