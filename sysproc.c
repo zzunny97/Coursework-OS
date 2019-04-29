@@ -6,6 +6,8 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
+#include "spinlock.h"
+#include "synch.h"
 
 int
 sys_fork(void)
@@ -170,5 +172,61 @@ sys_gettid(void)
   if(argint(0, &tid) < 0)
     return -1;
   return gettid(tid);
+}
+
+int
+sys_mutex_init(void)
+{
+  int mutex;
+  if(argint(0, &mutex) < 0)
+    return -1;
+  return mutex_init((struct mutex_t*)mutex);
+}
+int
+sys_mutex_lock(void)
+{
+  int mutex;
+  if(argint(0, &mutex) < 0)
+    return -1;
+  return mutex_lock((struct mutex_t*)mutex);
+}
+
+int
+sys_mutex_unlock(void)
+{
+  int mutex;
+  if(argint(0, &mutex) < 0)
+    return -1;
+  return mutex_unlock((struct mutex_t*)mutex);
+}
+
+
+int
+sys_cond_init(void)
+{
+  int cv;
+  if(argint(0, &cv) < 0)
+    return -1;
+  return cond_init((struct cond_t*)cv);
+}
+
+int
+sys_cond_wait(void)
+{
+  int mutex, cv;
+  if(argint(0, &cv) < 0)
+    return -1;
+  if(argint(1, &mutex) < 0)
+    return -1;
+  return cond_wait((struct cond_t*)cv, (struct mutex_t*)mutex);
+}
+
+int
+sys_cond_signal(void)
+{
+  int cv;
+  if(argint(0, &cv) < 0)
+    return -1;
+  return cond_signal((struct cond_t*)cv);
 }
 

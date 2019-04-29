@@ -1,45 +1,94 @@
 #include "types.h"
 #include "stat.h"
+#include "param.h"
+#include "memlayout.h"
+#include "mmu.h"
+#include "x86.h"
+#include "spinlock.h"
+#include "proc.h"
 #include "user.h"
-void *
-thread(void *arg)
-{
-	thread_exit((void *)0x87654321);
+#include "synch.h"
+
+#define N 8
+
+void *stack[NTHREAD];
+int tid[NTHREAD];
+void *retval[NTHREAD];
+
+struct mutex_t m;
+struct cond_t c;
+int buffer[10];
+int idx=0;
+int condition = 0;
+
+void *thread(void *arg){
+    printf(1, "tid: %d\n", (int)arg);
+    mutex_lock(&m);
+    printf(1, "tid: %d: mutex has been locked\n", (int)arg);
+
+	while(condition == 0){
+        printf(1, "while\n");
+		cond_wait(&c, &m);
+	}
+    printf(1, "tid: %d: cond_wait complete\n", (int)arg);
+    
+
+	printf(1, "111111\n");
+	condition--;
+	buffer[idx++] = (int)arg;
+	printf(1, "111111\n");
+	mutex_unlock(&m);
+	printf(1, "111111\n");
+	thread_exit(0);
 }
 
 int
 main(int argc, char **argv)
 {
-	void *stack;
-	void *retval;
-	int tid;
+	int i;
 
 	printf(1, "TEST: ");
 
-	stack = malloc(4096);
-	
-	tid = thread_create(thread, (void *)0x12345678, stack);
-	if(tid == -1) {
-		printf(1, "1\n");
-    printf(1, "WRONG\n");
-		exit();
+	for(i=0;i<NTHREAD;i++)
+		stack[i] = malloc(4096);
+	mutex_init(&m);
+	cond_init(&c);
+    printf(1, "\nmutex and cv init complete\n");
+	for(i=0;i<NTHREAD-1;i++){
+		tid[i] = thread_create(thread, (void *)i, stack[i]);
+
+		if(tid[i] == -1){
+			printf(1, "thread create failed\n");
+			exit();
+		}
 	}
-	if(thread_join(tid, &retval) == -1) {
-    printf(1, "2\n");
-		printf(1, "WRONG\n");
-		exit();
+    printf(1, "\n");
+	for(i=0;i<NTHREAD-1;i++){
+		mutex_lock(&m);
+		condition++;
+		cond_signal(&c);
+		mutex_unlock(&m);
 	}
 
-	if(retval != (void *)0x87654321) {
-    printf(1, "3\n");
-		printf(1, "WRONG\n");
-		exit();
+    printf(1, "sdfsadfsadf\n");
+	for(i=0;i<NTHREAD-1;i++){
+		if(thread_join(tid[i], &retval[i]) == -1){
+			printf(1, "thread join failed\n");
+			exit();
+		}
 	}
 
-	free(stack);
+	for(i=0;i<NTHREAD-1;i++){
+		if(buffer[i] != i){
+			printf(1, "WRONG\n");
+			exit();
+		}
+	}
+
+	for(i=0;i<NTHREAD;i++)
+		free(stack[i]);
 
 	printf(1, "OK\n");
 
 	exit();
 }
-

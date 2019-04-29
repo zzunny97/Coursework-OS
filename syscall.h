@@ -28,3 +28,9 @@
 #define SYS_thread_exit      27
 #define SYS_thread_join      28
 #define SYS_gettid      29
+#define SYS_mutex_init 30
+#define SYS_mutex_lock 31
+#define SYS_mutex_unlock 32
+#define SYS_cond_init 33
+#define SYS_cond_wait 34
+#define SYS_cond_signal 35

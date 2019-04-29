@@ -1,5 +1,7 @@
 struct stat;
 struct rtcdate;
+struct mutex_t;
+struct cond_t;
 
 // system calls
 int fork(void);
@@ -31,6 +33,15 @@ int thread_create(void* (void*), void*, void*);
 void thread_exit(void*);
 int thread_join(int, void**);
 int gettid();
+
+int mutex_init(struct mutex_t *mutex);
+int mutex_lock(struct mutex_t* mutex);
+int mutex_unlock(struct mutex_t* mutex);
+
+int cond_init(struct cond_t *cond);
+int cond_wait(struct cond_t *cond, struct mutex_t *mutex);
+int cond_signal(struct cond_t *cond);
+
 
 // ulib.c
 int stat(const char*, struct stat*);

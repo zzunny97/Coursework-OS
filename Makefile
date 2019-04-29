@@ -27,6 +27,7 @@ OBJS = \
 	uart.o\
 	vectors.o\
 	vm.o\
+    synch.o\
   
 # Cross-compiling (e.g., on Mac OS X)
 #TOOLPREFIX = i386-jos-elf
@@ -143,7 +144,7 @@ tags: $(OBJS) entryother.S _init
 vectors.S: vectors.pl
 	./vectors.pl > vectors.S
 
-ULIB = ulib.o usys.o printf.o umalloc.o
+ULIB = ulib.o usys.o printf.o umalloc.o 
 
 _%: %.o $(ULIB)
 	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
@@ -189,12 +190,7 @@ UPROGS=\
   _thread_exit\
   _thread_join\
   _gettid\
-  _test1\
-  _test2\
-  _test3\
-  _test4\
-  _test5\
-  _test6\
+  _test\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -256,7 +252,7 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 	$(QEMU) -nographic $(QEMUOPTS) -S $(QEMUGDB)
 
 # SKKU operating system
-PROJECTNUM=2
+PROJECTNUM=3
 # enter your ID
 STUDENTID=2016312029
 
