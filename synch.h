@@ -5,7 +5,8 @@ struct mutex_t{
   int valid;
   struct spinlock lock;
   struct proc *current;
-  struct proc *queue[NTHREAD-1];
+  //struct proc *queue[NTHREAD-1];
+  struct proc *queue[10];
   int qsize;
   int qnext;
 };
@@ -14,7 +15,9 @@ struct cond_t{
   int valid;
   int active;
   struct spinlock lock;
-  struct proc *queue[NTHREAD-1];
+  struct proc *current;
+  //struct proc *queue[NTHREAD-1];
+  struct proc *queue[10];
   int qsize;
   int qnext;
 };

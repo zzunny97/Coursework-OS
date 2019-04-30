@@ -476,8 +476,9 @@ sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   p->chan = chan;
   p->state = SLEEPING;
-
+  cprintf("before sched\n");
   sched();
+  cprintf("after sched\n");
 
   // Tidy up.
   p->chan = 0;
@@ -657,12 +658,13 @@ ps(int pid)
 
 int thread_create(void* (*function)(void*), void* arg, void* stack)
 {
+  cprintf("func: thread_create\n");
   int i;// pid;
   struct proc *np;
   struct proc *curproc = myproc(); 
   //cprintf("curproc->tcnt: %d\n", curproc->tcnt);
   //cprintf("curproc's tid: %d\n", curproc->tid);
-  if(curproc->tcnt == 8){
+  if(curproc->tcnt == 7){
     cprintf("cannot alloate more threads(maxmium 8)\n");
     return -1;
   }
@@ -690,7 +692,11 @@ int thread_create(void* (*function)(void*), void* arg, void* stack)
   np->tcnt += 1;
   curproc->tcnt += 1;
   np->tid = np->tcnt;
+  
   np->tf->eip = (uint)function;
+  
+  np->tf->edi = (uint)arg;
+
 
   np->stack = stack;
   np->tf->ebp = (uint)stack + PGSIZE;

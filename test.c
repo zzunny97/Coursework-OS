@@ -22,23 +22,24 @@ int idx=0;
 int condition = 0;
 
 void *thread(void *arg){
-    printf(1, "tid: %d\n", (int)arg);
     mutex_lock(&m);
-    printf(1, "tid: %d: mutex has been locked\n", (int)arg);
+    printf(1, "mutex has been locked\n");
 
 	while(condition == 0){
-        printf(1, "while\n");
+        printf(1, "cv is waiting\n");
 		cond_wait(&c, &m);
 	}
-    printf(1, "tid: %d: cond_wait complete\n", (int)arg);
+    printf(1, "cond_wait complete\n");
     
 
-	printf(1, "111111\n");
+	//printf(1, "111111\n");
 	condition--;
 	buffer[idx++] = (int)arg;
-	printf(1, "111111\n");
+	//printf(1, "111111\n");
 	mutex_unlock(&m);
-	printf(1, "111111\n");
+	//printf(1, "111111\n");
+
+    printf(1, "thread_exit\n");
 	thread_exit(0);
 }
 
@@ -62,10 +63,11 @@ main(int argc, char **argv)
 			exit();
 		}
 	}
-    printf(1, "\n");
+    printf(1, "real process\n");
 	for(i=0;i<NTHREAD-1;i++){
 		mutex_lock(&m);
 		condition++;
+        printf(1, "condition signal!!!!\n");
 		cond_signal(&c);
 		mutex_unlock(&m);
 	}
