@@ -9,7 +9,7 @@
 #include "user.h"
 #include "synch.h"
 
-#define N 8
+#define NTHREAD 4 
 
 void *stack[NTHREAD];
 int tid[NTHREAD];
@@ -24,10 +24,13 @@ int condition = 0;
 void *thread(void *arg){
     mutex_lock(&m);
     printf(1, "mutex has been locked\n");
-
+    int flag = 0;
 	while(condition == 0){
-        printf(1, "cv is waiting\n");
+        //printf(1, "cv is waiting\n");
 		cond_wait(&c, &m);
+        //flag++;
+        //if(flag == 10)
+        //  exit();
 	}
     printf(1, "cond_wait complete\n");
     

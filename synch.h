@@ -7,8 +7,8 @@ struct mutex_t{
   struct proc *current;
   //struct proc *queue[NTHREAD-1];
   struct proc *queue[10];
-  int qsize;
-  int qnext;
+  uint qsize;
+  uint qnext;
 };
 
 struct cond_t{
@@ -18,8 +18,8 @@ struct cond_t{
   struct proc *current;
   //struct proc *queue[NTHREAD-1];
   struct proc *queue[10];
-  int qsize;
-  int qnext;
+  uint qsize;
+  uint qnext;
 };
 
 int mutex_init(struct mutex_t* mutex);

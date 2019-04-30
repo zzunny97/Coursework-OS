@@ -13,14 +13,15 @@
 
 #define NULL 0
 
+
+
 int mutex_init(struct mutex_t *mutex)
 {
   cprintf("func: mutex_init\n");
   if(mutex->valid == 1)
     return -2;
-
   mutex->valid = 1;
-  initlock(&mutex->lock, (char*)mutex);
+  //initlock(&mutex->lock, (char*)mutex);
   mutex->current = NULL;
   for(int i=0; i<NTHREAD; i++)
     mutex->queue[i] = NULL;
@@ -31,24 +32,39 @@ int mutex_init(struct mutex_t *mutex)
 
 int mutex_lock(struct mutex_t *mutex)
 {
-
   cprintf("func: mutex_lock\n");
   struct proc *curproc = myproc();
+  cprintf("pid: %d\t", curproc->pid);
+  cprintf("tid: %d\t", curproc->tid);
+  cprintf("mutex->qsize: %d\t", mutex->qsize);
+  
   if(mutex->valid != 1)
     return -2;
   if(mutex->current == curproc)
     return -3;
 
   
+  while(xchg(&mutex->lock, 1) != 0);
   if(mutex->current == NULL) {
-    mutex->current =curproc;
+    //cprintf("if statement\n");
+    mutex->current = curproc;
+    if(mutex->current == NULL)
+      cprintf("if statement error\n");
   }
   else {
-    mutex->queue[mutex->qsize++] = curproc;
-    //sleep(curproc, &(mutex->lock));
-    while(mutex->current->tid != curproc->tid);
+    //cprintf("else statement\n");
+    mutex->queue[mutex->qsize] = curproc;
+    mutex->qsize++;
+    while(mutex->current != NULL){
+      cprintf("mutex->current is busy\n"); 
+    }
+    while(mutex->current->tid != curproc->tid){
+      //cprintf(".");
+      cprintf("other process waiting..\n");
+    }
   }
-  acquire(&(mutex->lock));
+  //while(xchg(&mutex->lock, 1) != 0);
+  cprintf("func: mutex_lock end\n");
   return 0;
 }
 
@@ -61,29 +77,17 @@ int mutex_unlock(struct mutex_t *mutex)
     return -2;
   if(mutex->current != curproc)
     return -3;
-
-  //cprintf("abcde\n");
-  /*if(!holding(&mutex->lock)){
-    cprintf("not holding mutex in mutex_unlock\n");
-    return 0;
-
-  }*/
-  release(&mutex->lock);
-  //cprintf("qwerr\n");
-  mutex->current = NULL;
-  //cprintf("hello\n");
-  if(mutex->qsize != 0){
-  //cprintf("hello\n");
-    mutex->queue[mutex->qnext++] = mutex->current;
-  }
-  //cprintf("hello\n");
-  /*
-  if(mutex->qsize != 0) {
+ 
+  xchg(&mutex->lock, 0);
+  if(mutex->queue[mutex->qnext] != NULL){
+    //mutex->queue[mutex->qnext] = mutex->current;
     mutex->current = mutex->queue[mutex->qnext];
-    mutex->queue[mutex->qnext]->state = RUNNABLE;
     mutex->qnext++;
-    acquire(&mutex->lock);
-  }*/
+  }
+  //xchg(&mutex->lock, 0);
+  //release(&mutex->lock);
+  mutex->current = NULL;
+  cprintf("func: mutex_unlock end\n");
   return 0;
 }
 
@@ -95,8 +99,7 @@ int cond_init(struct cond_t *cond)
     return -2;
 
   cond->valid = 1;
-  cond->active = 0;
-  initlock(&cond->lock, (char*)cond);
+  //initlock(&cond->lock, (char*)cond);
   for(int i=0; i<NTHREAD; i++)
     cond->queue[i] = NULL;
   cond->qsize = 0;
@@ -109,47 +112,44 @@ int cond_wait(struct cond_t *cond, struct mutex_t *mutex)
 
   cprintf("func: cond_wait\n");
   struct proc *curproc = myproc();
-  if(cond->valid != 1 || mutex->valid != 1)
+  if(cond->valid != 1 || mutex->valid != 1){
+    cprintf("return -2 error\n");
     return -2;
-  if(!holding(&mutex->lock))
+  }
+  /*
+  if(!holding(&mutex->lock)){
+    cprintf("return -3 error\n");
     return -3;
-  if(mutex->current != curproc)
+  }*/
+  
+  if(mutex->current != curproc){
+    cprintf("return -3-2 error\n");
     return -3;
-
-
-
+  }
+  /*
   if(!holding(&mutex->lock)) {
     cprintf("not holding mutex\n");
     return 0;
-  }
-
-  //mutex_unlock(mutex);
-  //cond->queue[cond->qsize++] = curproc;
-  //sleep(curproc, &(cond->lock));
-
- /* 
-  for(int i=0; i<cond->qsize; i++) {
-    if(cond->queue[i]->tid == curproc->tid)
-      return 0;
   }*/
+  //cprintf("cond->qsize: %d\n", cond->qsize);
+  //cprintf("cond->qnext: %d\n", cond->qnext);
+  mutex_unlock(mutex);
+  cond->queue[cond->qsize] = curproc;
+  cond->qsize++;
+  //cond->qsize = cond->qsize + 1;
+  //cprintf("tid: %dstart sleeping\n", curproc->tid);
+  cprintf("going to sleep\n");
+  tsleep(curproc, &(cond->lock));
+  //sleep(curproc, &(cond->lock));
+  //cprintf("1111\n");
+  cprintf("wake up!!!!!!\n");
+  mutex_lock(mutex);
+  cprintf("successly end\n");
   
-  if(mutex->current == NULL) {
-    mutex->current =curproc;
-  }
-  else {
-    mutex->queue[mutex->qsize++] = curproc;
-    //sleep(curproc, &(mutex->lock));
-    while(mutex->current->tid != curproc->tid);
-  }
-  acquire(&(mutex->lock));
-
-
-
-
-  return 0;
-  cond->queue[cond->qsize++] = curproc;
-  cprintf("tid: %dstart sleeping\n", curproc->tid);
-  while(cond->qnext->tid != curproc->tid);
+  //return 0;
+  //cond->queue[cond->qsize++] = curproc;
+  //cprintf("tid: %dstart sleeping\n", curproc->tid);
+  //while(cond->qnext->tid != curproc->tid);
   //sleep(curproc, &(mutex->lock));
   /*
   if(cond->current != NULL){
@@ -172,14 +172,17 @@ int cond_signal(struct cond_t *cond)
 
   cprintf("func: cond_signal\n");
   struct proc *curproc = myproc();
-  if(cond->valid != 1)
+  if(cond->valid != 1){
+    cprintf("cond_signal error!!\n");
     return -2;
+  }
   
   if(cond->queue[cond->qnext] != NULL) {
-    wakeup(cond->queue[cond->qnext]);
+    twake(cond->queue[cond->qnext]);
+    //wakeup(cond->queue[cond->qnext]);
     cond->qnext++;
     //wakeup(cond->current);
   }
-  
+  cprintf("func: cond_signal end\n"); 
   return 0;  
 }

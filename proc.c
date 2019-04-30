@@ -9,6 +9,9 @@
 #include "stat.h"
 #include "fcntl.h"
 
+
+#define NULL 0
+
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
@@ -450,6 +453,33 @@ forkret(void)
   // Return to "caller", actually trapret (see allocproc).
 }
 
+int tsleep(struct proc* curproc, struct mutex_t *mutex)
+{
+  if(curproc == NULL)
+    panic("tsleep\n");
+  acquire(&ptable.lock);
+  curproc->state = SLEEPING;
+  xchg(mutex, 0);
+  sched();
+  curproc->chan = 0;
+  release(&ptable.lock);
+  return 0;
+}
+
+int twake(struct proc *p)
+{
+  acquire(&ptable.lock);
+  if(p->state != SLEEPING)
+    panic("twake error\n");
+
+  p->state = RUNNABLE;
+  release(&ptable.lock);
+  return 0;
+
+}
+
+
+
 // Atomically release lock and sleep on chan.
 // Reacquires lock when awakened.
   void
@@ -476,10 +506,9 @@ sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   p->chan = chan;
   p->state = SLEEPING;
-  cprintf("before sched\n");
+  //cprintf(1"before sched\n");
   sched();
-  cprintf("after sched\n");
-
+  //cprintf("after sched\n");
   // Tidy up.
   p->chan = 0;
 
@@ -682,6 +711,7 @@ int thread_create(void* (*function)(void*), void* arg, void* stack)
     np->state = UNUSED;
     return -1;
   }
+  np->pgdir = curproc->pgdir;
 
   np->pid = curproc->pid;
   np->sz = curproc->sz;
@@ -774,9 +804,11 @@ thread_join(int tid, void** retval)
   //int pid;
   acquire(&ptable.lock);
   for(;;){
+    //cprintf("thread_join for loop\n");
     // Scan through table looking for exited children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      //cprintf("thread_join inner for loop\n");
       if(curproc->pid != p->pid || p->tid != tid)
         continue;
       //cprintf("have kid\n");
