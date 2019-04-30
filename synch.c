@@ -78,13 +78,13 @@ int mutex_unlock(struct mutex_t *mutex)
   if(mutex->current != curproc)
     return -3;
  
-  xchg(&mutex->lock, 0);
+  //xchg(&mutex->lock, 0);
   if(mutex->queue[mutex->qnext] != NULL){
     //mutex->queue[mutex->qnext] = mutex->current;
     mutex->current = mutex->queue[mutex->qnext];
     mutex->qnext++;
   }
-  //xchg(&mutex->lock, 0);
+  xchg(&mutex->lock, 0);
   //release(&mutex->lock);
   mutex->current = NULL;
   cprintf("func: mutex_unlock end\n");
@@ -100,6 +100,7 @@ int cond_init(struct cond_t *cond)
 
   cond->valid = 1;
   //initlock(&cond->lock, (char*)cond);
+  cond->current = NULL;
   for(int i=0; i<NTHREAD; i++)
     cond->queue[i] = NULL;
   cond->qsize = 0;
@@ -126,32 +127,28 @@ int cond_wait(struct cond_t *cond, struct mutex_t *mutex)
     cprintf("return -3-2 error\n");
     return -3;
   }
-  /*
-  if(!holding(&mutex->lock)) {
-    cprintf("not holding mutex\n");
-    return 0;
-  }*/
-  //cprintf("cond->qsize: %d\n", cond->qsize);
-  //cprintf("cond->qnext: %d\n", cond->qnext);
   mutex_unlock(mutex);
-  cond->queue[cond->qsize] = curproc;
-  cond->qsize++;
-  //cond->qsize = cond->qsize + 1;
-  //cprintf("tid: %dstart sleeping\n", curproc->tid);
+
+  if(cond->current == NULL)
+    cond->current = curproc;
+
+  else{
+    cond->queue[cond->qsize] = curproc;
+    cond->qsize++;
+  }
   cprintf("going to sleep\n");
-  tsleep(curproc, &(cond->lock));
+  //tsleep(curproc, &(cond->lock));
   //sleep(curproc, &(cond->lock));
-  //cprintf("1111\n");
+
+
+  while(cond->active != 1 || cond->current != curproc);
+
+
   cprintf("wake up!!!!!!\n");
   mutex_lock(mutex);
   cprintf("successly end\n");
-  
-  //return 0;
-  //cond->queue[cond->qsize++] = curproc;
-  //cprintf("tid: %dstart sleeping\n", curproc->tid);
-  //while(cond->qnext->tid != curproc->tid);
-  //sleep(curproc, &(mutex->lock));
-  /*
+ 
+  /* 
   if(cond->current != NULL){
     cond->queue[cond->qsize] = curproc;
     cond->qsize++;
@@ -177,12 +174,15 @@ int cond_signal(struct cond_t *cond)
     return -2;
   }
   
+   
   if(cond->queue[cond->qnext] != NULL) {
-    twake(cond->queue[cond->qnext]);
+    //twake(cond->queue[cond->qnext]);
     //wakeup(cond->queue[cond->qnext]);
+    cond->current = cond->queue[cond->qnext];
     cond->qnext++;
     //wakeup(cond->current);
   }
+  
   cprintf("func: cond_signal end\n"); 
   return 0;  
 }

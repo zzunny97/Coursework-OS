@@ -9,7 +9,7 @@
 #include "user.h"
 #include "synch.h"
 
-#define NTHREAD 4 
+#define NTHREAD 8 
 
 void *stack[NTHREAD];
 int tid[NTHREAD];
@@ -22,78 +22,75 @@ int idx=0;
 int condition = 0;
 
 void *thread(void *arg){
-    mutex_lock(&m);
-    printf(1, "mutex has been locked\n");
-    int flag = 0;
-	while(condition == 0){
-        //printf(1, "cv is waiting\n");
-		cond_wait(&c, &m);
-        //flag++;
-        //if(flag == 10)
-        //  exit();
-	}
-    printf(1, "cond_wait complete\n");
-    
+  printf(1, "19191919191919191919\n");
+  mutex_lock(&m);
+  printf(1, "************\n");
+  while(condition == 0){
+    printf(1, "----------------cond_wait while loop--------------\n");
+    cond_wait(&c, &m);
+  }
+  printf(1, "cond_wait complete\n");
 
-	//printf(1, "111111\n");
-	condition--;
-	buffer[idx++] = (int)arg;
-	//printf(1, "111111\n");
-	mutex_unlock(&m);
-	//printf(1, "111111\n");
 
-    printf(1, "thread_exit\n");
-	thread_exit(0);
+  condition--;
+  buffer[idx++] = (int)arg;
+  printf(1, "arg: %d\t buffer[idx]: %d\n", (int)arg, buffer[idx-1]);
+  mutex_unlock(&m);
+  printf(1, "thread_exit\n\n");
+  thread_exit(0);
 }
 
-int
+  int
 main(int argc, char **argv)
 {
-	int i;
+  int i;
 
-	printf(1, "TEST: ");
+  printf(1, "TEST: ");
 
-	for(i=0;i<NTHREAD;i++)
-		stack[i] = malloc(4096);
-	mutex_init(&m);
-	cond_init(&c);
-    printf(1, "\nmutex and cv init complete\n");
-	for(i=0;i<NTHREAD-1;i++){
-		tid[i] = thread_create(thread, (void *)i, stack[i]);
+  for(i=0;i<NTHREAD;i++)
+    stack[i] = malloc(4096);
+  mutex_init(&m);
+  cond_init(&c);
+  printf(1, "\nmutex and cv init complete\n");
+  for(i=0;i<NTHREAD-1;i++){
+    tid[i] = thread_create(thread, (void *)i, stack[i]);
+    printf(1, "tid[%d]: %d\n", i, tid[i]);
+    if(tid[i] == -1){
+      printf(1, "thread create failed\n");
+      exit();
+    }
+  }
+  printf(1, "real process going cond_signal\n");
+  for(i=0;i<NTHREAD-1;i++){
+    mutex_lock(&m);
+    condition++;
+    printf(1, "condition signal!!!!\n");
+    cond_signal(&c);
+    mutex_unlock(&m);
+  }
 
-		if(tid[i] == -1){
-			printf(1, "thread create failed\n");
-			exit();
-		}
-	}
-    printf(1, "real process\n");
-	for(i=0;i<NTHREAD-1;i++){
-		mutex_lock(&m);
-		condition++;
-        printf(1, "condition signal!!!!\n");
-		cond_signal(&c);
-		mutex_unlock(&m);
-	}
+  printf(1, "real process going thread_join\n");
+  for(i=0;i<NTHREAD-1;i++){
+    if(thread_join(tid[i], &retval[i]) == -1){
+      printf(1, "thread join failed\n");
+      exit();
+    }
+    printf(1, "thread join!\n");
+  }
+  printf(1, "thread_join complete\n");
 
-    printf(1, "sdfsadfsadf\n");
-	for(i=0;i<NTHREAD-1;i++){
-		if(thread_join(tid[i], &retval[i]) == -1){
-			printf(1, "thread join failed\n");
-			exit();
-		}
-	}
+  for(i=0;i<NTHREAD-1;i++){
+    printf(1, "buffer[%d] = %d\n",i, buffer[i]);
+    if(buffer[i] != i){
+      printf(1, "WRONG\n");
+      exit();
+    }
+  }
 
-	for(i=0;i<NTHREAD-1;i++){
-		if(buffer[i] != i){
-			printf(1, "WRONG\n");
-			exit();
-		}
-	}
+  for(i=0;i<NTHREAD;i++)
+    free(stack[i]);
 
-	for(i=0;i<NTHREAD;i++)
-		free(stack[i]);
+  printf(1, "OK\n");
 
-	printf(1, "OK\n");
-
-	exit();
+  exit();
 }

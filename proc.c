@@ -131,7 +131,7 @@ userinit(void)
 
   p = allocproc();
 
-  p->tid = 0;
+  //p->tid = 0;
   initproc = p;
   if((p->pgdir = setupkvm()) == 0)
     panic("userinit: out of memory?");
@@ -157,7 +157,7 @@ userinit(void)
 
   p->state = RUNNABLE;
   p->nice = 20;
-  p->tid = 0;
+  //p->tid = 0;
   p->tcnt = 0;
   release(&ptable.lock);
 }
@@ -210,7 +210,7 @@ fork(void)
   np->nice = 20;
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
-  np->tid = 0;
+  //np->tid = 0;
   np->tcnt = 0;
   for(i = 0; i < NOFILE; i++)
     if(curproc->ofile[i])
@@ -691,8 +691,8 @@ int thread_create(void* (*function)(void*), void* arg, void* stack)
   int i;// pid;
   struct proc *np;
   struct proc *curproc = myproc(); 
-  //cprintf("curproc->tcnt: %d\n", curproc->tcnt);
-  //cprintf("curproc's tid: %d\n", curproc->tid);
+  cprintf("curproc->pid: %d\n", curproc->pid);
+  cprintf("curproc's tid: %d\n", curproc->tid);
   if(curproc->tcnt == 7){
     cprintf("cannot alloate more threads(maxmium 8)\n");
     return -1;
@@ -721,19 +721,28 @@ int thread_create(void* (*function)(void*), void* arg, void* stack)
   np->tcnt = curproc->tcnt;
   np->tcnt += 1;
   curproc->tcnt += 1;
-  np->tid = np->tcnt;
+  np->tid = curproc->tcnt;
+ 
+  void* stacktop = stack+PGSIZE;
+  *(uint*)(stacktop - 8) = 0xffffffff;
+  *(uint*)(stacktop - 4) = (uint)arg;
+
+ 
   
+  cprintf("np's tid: %d\n", np->tid);
   np->tf->eip = (uint)function;
   
+  np->stack = stack;
   np->tf->edi = (uint)arg;
 
-
-  np->stack = stack;
+  np->tf->esp = (uint)(stacktop - 8);
+  
+  /*
   np->tf->ebp = (uint)stack + PGSIZE;
   np->tf->esp = (uint)stack + PGSIZE;
   np->tf->esp -= 4;
   //cprintf("np->tf->esp: %p\t np->tf->esp - 4: %p\n", (uint*)np->tf->esp, (uint*)(np->tf->esp -4)); 
-  *((uint*)np->tf->esp) = (uint)arg;
+  *(uint*)np->tf->esp = (uint)arg;*/
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
@@ -742,10 +751,11 @@ int thread_create(void* (*function)(void*), void* arg, void* stack)
       np->ofile[i] = filedup(curproc->ofile[i]);
   np->cwd = idup(curproc->cwd);
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
-
+  np->tf->eip = (uint)function;
   acquire(&ptable.lock);
   np->state = RUNNABLE;
   release(&ptable.lock);
+  cprintf("np's tid: %d\n", np->tid);
   return np->tid;
 }
 
@@ -797,18 +807,18 @@ thread_exit(void* retval)
   int
 thread_join(int tid, void** retval)
 {
-  //cprintf("func: thread_join\n");
+  cprintf("func: thread_join\n");
   struct proc *p;
   int havekids;
   struct proc *curproc = myproc();
   //int pid;
   acquire(&ptable.lock);
   for(;;){
-    //cprintf("thread_join for loop\n");
+    cprintf("thread_join for loop\n");
     // Scan through table looking for exited children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      //cprintf("thread_join inner for loop\n");
+      cprintf("thread_join inner for loop\n");
       if(curproc->pid != p->pid || p->tid != tid)
         continue;
       //cprintf("have kid\n");
@@ -817,24 +827,30 @@ thread_join(int tid, void** retval)
          cprintf("eax correct\n");
          else
          cprintf("eax wrong\n");*/
-
+      cprintf("found kid\n");
       havekids = 1;
       if(p->state == ZOMBIE){
+        cprintf("state = zombie\n");
         curproc->tcnt -= 1;
         *retval = (void*)p->tf->eax;
+        cprintf("a\n");
         //cprintf("current before thread cnt: %d\n", curproc->tcnt);
         //*(curproc->tcnt) -= 1;
         //cprintf("current after thread cnt: %d\n", curproc->tcnt);
         kfree(p->kstack);
+        cprintf("a\n");
         p->kstack = 0;
+        cprintf("a\n");
         //kfree(p->stack);
-        freevm(p->pgdir);
+        //freevm(p->pgdir);
+        cprintf("a\n");
         p->pid = 0;
         p->parent = 0;
         p->name[0] = 0;
         p->killed = 0;
         p->state = UNUSED;
         release(&ptable.lock);
+        cprintf("a\n");
         //cprintf("thread_join end\n");
         return 0;
       }
