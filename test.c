@@ -22,10 +22,8 @@ int idx=0;
 int condition = 0;
 
 void *thread(void *arg){
-  printf(1, "thread\n");
   mutex_lock(&m);
   while(condition == 0){
-    printf(1, "while loop\n");
     cond_wait(&c, &m);
   }
   condition--;
@@ -54,7 +52,6 @@ main(int argc, char **argv)
   }
 
   for(i=0;i<NTHREAD-1;i++){
-    printf(1, "cv signal\n");
     mutex_lock(&m);
     condition++;
     cond_signal(&c);

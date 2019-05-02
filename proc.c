@@ -704,12 +704,9 @@ ps(int pid)
 
 int thread_create(void* (*function)(void*), void* arg, void* stack)
 {
-  //cprintf("func: thread_create\n");
   int i;// pid;
   struct proc *np;
   struct proc *curproc = myproc(); 
-  //cprintf("curproc->pid: %d\n", curproc->pid);
-  //cprintf("curproc's tid: %d\n", curproc->tid);
   if(curproc->tcnt == 7){
     cprintf("cannot alloate more threads(maxmium 8)\n");
     return -1;
@@ -746,7 +743,6 @@ int thread_create(void* (*function)(void*), void* arg, void* stack)
 
  
   
-  cprintf("np's tid: %d\n", np->tid);
   np->tf->eip = (uint)function;
   
   np->stack = stack;
