@@ -12,10 +12,13 @@
 
 #define NULL 0
 
+
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
 } ptable;
+
+
 
 static struct proc *initproc;
 
@@ -453,29 +456,43 @@ forkret(void)
   // Return to "caller", actually trapret (see allocproc).
 }
 
-int tsleep(struct proc* curproc, struct mutex_t *mutex)
+int tsleep(struct proc* curproc)
 {
   if(curproc == NULL)
     panic("tsleep\n");
   acquire(&ptable.lock);
-  curproc->state = SLEEPING;
-  xchg(mutex, 0);
-  sched();
-  curproc->chan = 0;
+  sleep(curproc, &ptable.lock);
   release(&ptable.lock);
   return 0;
 }
 
-int twake(struct proc *p)
+int twake(struct proc *curproc)
 {
-  acquire(&ptable.lock);
-  if(p->state != SLEEPING)
-    panic("twake error\n");
+  //struct proc* curproc2 = mycpu();
+  //acquire(&ptable.lock);
+  //sleep(curproc2, &ptable.lock);
+  //release(&ptable.lock);
 
-  p->state = RUNNABLE;
+  if(curproc->state != SLEEPING)
+    panic("twake error\n");
+  acquire(&ptable.lock);
+  wakeup1(curproc);
   release(&ptable.lock);
+
   return 0;
 
+}
+
+void tmpsleep(struct proc* curproc)
+{
+  acquire(&ptable.lock);
+  sleep(curproc, &ptable.lock);
+  release(&ptable.lock);
+}
+
+void tmpwake(struct proc* curproc)
+{
+  wakeup1(curproc);
 }
 
 
@@ -687,12 +704,12 @@ ps(int pid)
 
 int thread_create(void* (*function)(void*), void* arg, void* stack)
 {
-  cprintf("func: thread_create\n");
+  //cprintf("func: thread_create\n");
   int i;// pid;
   struct proc *np;
   struct proc *curproc = myproc(); 
-  cprintf("curproc->pid: %d\n", curproc->pid);
-  cprintf("curproc's tid: %d\n", curproc->tid);
+  //cprintf("curproc->pid: %d\n", curproc->pid);
+  //cprintf("curproc's tid: %d\n", curproc->tid);
   if(curproc->tcnt == 7){
     cprintf("cannot alloate more threads(maxmium 8)\n");
     return -1;
@@ -755,7 +772,15 @@ int thread_create(void* (*function)(void*), void* arg, void* stack)
   acquire(&ptable.lock);
   np->state = RUNNABLE;
   release(&ptable.lock);
-  cprintf("np's tid: %d\n", np->tid);
+  
+  //yield(); 
+  /*
+  if(curproc->state != SLEEPING) {
+    acquire(&ptable.lock);
+    sleep(curproc, &ptable.lock); 
+    release(&ptable.lock);
+  }*/
+  //cprintf("np's tid: %d\n", np->tid);
   return np->tid;
 }
 
@@ -807,18 +832,18 @@ thread_exit(void* retval)
   int
 thread_join(int tid, void** retval)
 {
-  cprintf("func: thread_join\n");
+  //cprintf("func: thread_join\n");
   struct proc *p;
   int havekids;
   struct proc *curproc = myproc();
   //int pid;
   acquire(&ptable.lock);
   for(;;){
-    cprintf("thread_join for loop\n");
+    //cprintf("thread_join for loop\n");
     // Scan through table looking for exited children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      cprintf("thread_join inner for loop\n");
+      //cprintf("thread_join inner for loop\n");
       if(curproc->pid != p->pid || p->tid != tid)
         continue;
       //cprintf("have kid\n");
@@ -827,30 +852,30 @@ thread_join(int tid, void** retval)
          cprintf("eax correct\n");
          else
          cprintf("eax wrong\n");*/
-      cprintf("found kid\n");
+      //cprintf("found kid\n");
       havekids = 1;
       if(p->state == ZOMBIE){
-        cprintf("state = zombie\n");
+        //cprintf("state = zombie\n");
         curproc->tcnt -= 1;
         *retval = (void*)p->tf->eax;
-        cprintf("a\n");
+        //cprintf("a\n");
         //cprintf("current before thread cnt: %d\n", curproc->tcnt);
         //*(curproc->tcnt) -= 1;
         //cprintf("current after thread cnt: %d\n", curproc->tcnt);
         kfree(p->kstack);
-        cprintf("a\n");
+        //cprintf("a\n");
         p->kstack = 0;
-        cprintf("a\n");
+        //cprintf("a\n");
         //kfree(p->stack);
         //freevm(p->pgdir);
-        cprintf("a\n");
+        //cprintf("a\n");
         p->pid = 0;
         p->parent = 0;
         p->name[0] = 0;
         p->killed = 0;
         p->state = UNUSED;
         release(&ptable.lock);
-        cprintf("a\n");
+        //cprintf("a\n");
         //cprintf("thread_join end\n");
         return 0;
       }
